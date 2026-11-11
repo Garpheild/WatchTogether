@@ -1,8 +1,6 @@
 # native
 
-Код для нативных клиентов (Android/iOS, React Native, WebView-мосты):
-типы событий плеера, адаптеры платформенных API, общие DTO.
+Код для нативных клиентов: мосты, типы событий плеера, адаптеры платформенных API.
 
-Когда понадобится настоящий мобильный клиент — разворачиваем React Native
-рядом (`yarn create expo-app native/app` или `npx @react-native-community/cli init`)
-и переиспользуем `framework` + `native` через workspace.
+Мобильный клиент разворачивается здесь же (`yarn create expo-app native/app`
+или RN CLI) и переиспользует общий код через workspace.
