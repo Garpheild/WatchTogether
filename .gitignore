@@ -1,0 +1,29 @@
+# deps
+node_modules/
+.yarn/cache/
+.yarn/install-state.gz
+.pnp.*
+
+# build
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# env
+.env
+.env.local
+.env.*.local
+
+# editors / os
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# logs
+*.log
+npm-debug.log*
+yarn-error.log*
