@@ -1,0 +1,1 @@
+"""WatchTogether backend application."""
