@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, String
+from sqlalchemy import text as sql_text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -30,6 +31,6 @@ class Message(Base):
             "participant_id",
             "client_message_id",
             unique=True,
-            postgresql_where=text("client_message_id IS NOT NULL"),
+            postgresql_where=sql_text("client_message_id IS NOT NULL"),
         ),
     )

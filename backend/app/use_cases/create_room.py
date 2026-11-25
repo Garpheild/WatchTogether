@@ -54,8 +54,11 @@ async def create_room(
             updated_at=now,
             updated_by_participant_id=None,
         )
-        session.add_all([room, participant, playback])
+        session.add(room)
         try:
+            # Flush the room first so participants.playback can reference it.
+            await session.flush()
+            session.add_all([participant, playback])
             await session.flush()
             return room, participant, playback, access_token
         except IntegrityError as exc:

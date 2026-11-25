@@ -16,6 +16,7 @@ from app.core.errors import (
     RoomFull,
     RoomNotFound,
 )
+from app.core.events import RoomEventPublisher
 from app.core.rate_limit import TokenBucket
 from app.core.security import create_ws_ticket, generate_access_token, hash_access_token
 from app.core.youtube import canonical_youtube_url, parse_youtube_url
@@ -36,6 +37,11 @@ create_limit = TokenBucket(rate=1 / 3600, burst=5)
 join_limit = TokenBucket(rate=1 / 60, burst=10)
 ticket_participant_limit = TokenBucket(rate=1 / 60, burst=10)
 ticket_ip_limit = TokenBucket(rate=1 / 120, burst=30)
+
+
+def room_event_publisher(request: Request) -> RoomEventPublisher | None:
+    publisher: RoomEventPublisher | None = getattr(request.app.state, "room_event_publisher", None)
+    return publisher
 
 
 def room_response(room: Room) -> RoomResponse:
@@ -204,6 +210,7 @@ async def ws_ticket(
 async def leave(
     room_code: str,
     session: SessionDep,
+    http_request: Request,
     authorization: str | None = Header(default=None),
 ) -> Response:
     token = (
@@ -212,8 +219,12 @@ async def leave(
     room, participant = await resolve_principal(session, token, room_code)
     if participant.role == "owner":
         raise OwnerMustClose()
+    await session.commit()  # close the read-only transaction opened by resolve_principal
     async with session.begin():
         await ParticipantRepository(session).leave(participant, SystemClock().now())
+    publisher = room_event_publisher(http_request)
+    if publisher is not None:
+        await publisher.participant_left(room_code, str(participant.id))
     return Response(status_code=204)
 
 
@@ -221,6 +232,7 @@ async def leave(
 async def close_room(
     room_code: str,
     session: SessionDep,
+    http_request: Request,
     authorization: str | None = Header(default=None),
 ) -> Response:
     token = (
@@ -229,6 +241,12 @@ async def close_room(
     room, participant = await resolve_principal(session, token, room_code)
     if participant.role != "owner":
         raise Forbidden("Only the owner can close the room")
+    await session.commit()  # close the read-only transaction opened by resolve_principal
+    now = SystemClock().now()
     async with session.begin():
-        await RoomRepository(session).close(room, SystemClock().now())
+        closed = await RoomRepository(session).close(room, now)
+    if closed:
+        publisher = room_event_publisher(http_request)
+        if publisher is not None:
+            await publisher.room_closed(room_code, now.isoformat(), str(participant.id))
     return Response(status_code=204)
