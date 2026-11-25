@@ -15,3 +15,9 @@ class PlaybackRepository:
             select(PlaybackState).where(PlaybackState.room_id == room_id)
         )
         return result.scalar_one_or_none()
+
+    async def get_by_room_id_for_update(self, room_id: uuid.UUID) -> PlaybackState | None:
+        result = await self.session.execute(
+            select(PlaybackState).where(PlaybackState.room_id == room_id).with_for_update()
+        )
+        return result.scalar_one_or_none()
